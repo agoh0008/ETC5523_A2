@@ -1,7 +1,9 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/DFPrslu9)
+# ETC5523: Assignment 2 - Creating a Blog using Quarto
 
-# ETC5523 Blog Assessment
+This repository contains the work and materials for Assignment 2 of the ETC5523 unit (Communicating with Data).
 
-* This is a blog post for the ETC5523 Blog Assessment. 
+The purpose of this blog is to analyze college majors and graduates in the United States, with a focus on understanding the trends and patterns in college major choices. It also delves into the demographics behind these choices, examining factors such as gender distribution and ethnicity.
+
+## Blog Details
 * The author of this blog is **Alexandra Goh**.
 * The URL for this blog is [https://agoh0008.netlify.app/](https://agoh0008.netlify.app/)
