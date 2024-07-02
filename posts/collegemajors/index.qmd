@@ -1,0 +1,402 @@
+---
+title: "Making Sense of Majors: What Drives Our College Major Choices? 📚"
+author: "Alexandra Goh"
+date: "2023-08-25"
+categories: [data story]
+image: "graduate.gif"
+bibliography: references.bib
+csl: apa-6th-edition.csl
+css: "style.css"
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(scales)
+library(ggrepel)
+library(ggplot2)
+library(patchwork)
+library(plotly)
+library(knitr)
+library(here)
+library(viridis)
+library(gt)
+library(RColorBrewer)
+
+```
+
+```{r read}
+
+collegemajors <- read.csv("data/recent-grads.csv")
+time <- read.csv("data/time-analysis.csv", check.names = FALSE) 
+time <- time %>% rename(Major = "Field of study")
+ethnicity <- read.csv("data/ethnicity.csv")
+
+```
+
+Ever wondered why so many of us end up choosing the college majors we do? Is it the promise of high earnings or the allure of job security? According to recent studies, your major might have more to do with economic factors than you think! In fact, the National Center for Education Statistics reported that roughly one-third of undergraduate students who formally declared a major within three years of initial enrollment ended up changing it at least once, with another solid 10 percent switching their major two times or more [@claybourn_2022].
+
+In this article, we will further explore the motivations behind one of life's most significant decisions: choosing a college major.
+
+## About the Data
+
+Our analysis will be centered around college majors and graduates in the United States. The main dataset, primarily sourced from [TidyTuesday](https://github.com/rfordatascience/tidytuesday/tree/master/data/2018/2018-10-16) and originally extracted from the @maindata's [American Community Survey 2010-2012 Public Use Microdata Series](https://www.census.gov/programs-surveys/acs/news/data-releases.html), comprises of 173 observations and encompasses 21 variables. It provides comprehensive information about various college majors, including their ranks based on median earnings, number of graduates, gender distribution, employment status, earnings percentiles, and job types.
+
+[Table 1](#table-1) below provides a brief outlook of the variables' classes and descriptions.
+
+<a name="table-1"></a>
+
+```{r table1}
+
+table1 <- tibble(
+  "Variable" = colnames(collegemajors),
+  "Class" = c("integer", "integer", "character", "integer",
+              "integer", "integer", "character", "double",
+              "integer", "integer", "integer", "integer",
+              "integer", "integer", "double", "integer",
+              "integer", "integer", "integer", "integer", "integer"),
+  "Description" = c("Rank by median earnings",
+                    "Major code, FO1DP in ACS PUMS",
+                    "Major description",
+                    "Category of major from Carnevale et al",
+                    "Total number of people with major",
+                    "Sample size (unweighted) of full-time, year-round ONLY (used for earnings)",
+                    "Male graduates",
+                    "Female graduates",
+                    "Women as share of total",
+                    "Number employed (ESR == 1 or 2)",
+                    "Employed 35 hours or more",
+                    "Employed less than 35 hours",
+                    "Employed at least 50 weeks (WKW == 1) and at least 35 hours (WKHP >= 35)",
+                    "Number unemployed (ESR == 3)",
+                    "Unemployed / (Unemployed + Employed)",
+                    "Median earnings of full-time, year-round workers",
+                    "25th percentile of earnings",
+                    "75th percentile of earnings",
+                    "Number with job requiring a college degree",
+                    "Number with job not requiring a college degree",
+                    "Number in low-wage service jobs"
+                   ))
+
+knitr::kable(table1, format = "html", full_width = FALSE, 
+      bootstrap_options = c("striped", "hover", "condensed"),
+      caption = "Table 1: Summary of Main Dataset") %>% 
+  scroll_box(width = "800px", height = "400px")
+
+```
+
+<br>
+
+We also incorporated data from two external datasets provided by the National Center for Education Statistics (NCES) to further enrich our analysis. These include:
+
+-   [Bachelor's degrees conferred by postsecondary institutions, by field of study: Selected academic years, 1970-71 through 2020-21](https://nces.ed.gov/programs/digest/d22/tables/dt22_322.10.asp) compiled by the @dataset1 **- to track long-term trends in bachelor's degrees conferred**
+-   [Number and percentage distribution of science, technology, engineering, and mathematics (STEM) degrees/certificates conferred by postsecondary institutions, by race/ ethnicity, level of degree/certificate, and sex of student: Academic years 2011-12 through 2020-21](https://nces.ed.gov/programs/digest/d22/tables/dt22_318.45.asp) compiled by the @dataset2 **- to explore the distribution of ethnicity**
+
+## Analyzing College Major Choices: Trends and Patterns
+
+```{r}
+
+time <- time %>%
+  filter(Major != "Other and not classified") %>%
+  pivot_longer(cols = -Major,
+               names_to = "Year",
+               values_to = "Value") %>%
+  mutate(Value = as.numeric(gsub(",", "", Value)))
+
+# Remove "X" prefix from the "Year" column
+time <- time %>%
+  mutate(Year = sub("X", "", Year))
+
+time <- time %>%
+  mutate(Year = as.factor(Year))
+
+# Find top 10 majors based on the total number of graduates
+top_10_majors <- time %>%
+  group_by(Major) %>%
+  summarise(TotalGraduates = sum(Value)) %>%
+  top_n(10, wt = TotalGraduates) %>%
+  pull(Major)
+
+top_10_data <- time %>% filter(Major %in% top_10_majors)
+
+```
+
+First, let's take a look at the overall trend of college major choices from 1970-2021. @fig-1 reveals that over the decades, Business has consistently stood out as the most pursued major in the United States. What's particularly noteworthy is the significant surge in Business graduates from the late 1990s to the early 2010s, signifying a notable trend of heightened interest in Business education during that period. Another compelling development in the early 2010s includes the remarkable growth of graduates in Health Professions and Related Programs, which eventually became the second-most chosen major by the end of 2020-2021. Meanwhile, Social Sciences and History had a consistent hold on the second-most popular spot from 1990 to 2011 before gradually ceding ground to Health Professions.
+
+This shift in educational preferences reflects changing career aspirations and societal needs, illustrating the evolving landscape of academic pursuits in the United States. To unravel the factors behind this phenomenon and understand why the majors depicted in @fig-1 consistently occupy the ranks of the top ten most popular, we delve deeper into the forces shaping higher education and student decisions.
+
+```{r fig-1, fig.cap="Top 10 Most Popular Majors in the U.S. (1970-2021)", fig.align='center'}
+
+plot1 <- ggplot(data = top_10_data, 
+             aes(x = Year, y = Value/1000, 
+                 color = Major, group = Major,
+                 text = paste("Year:", Year, "<br>",
+                              "Total Graduates:", scales::comma(Value, scale = 1), "<br>",
+                              "Major:", Major))) +
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "Year",
+    y = "Total Graduates ('000)",
+    color = "Major"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_color_viridis(discrete = TRUE) 
+
+
+ggplotly(plot1, tooltip = "text")
+
+```
+
+#### [**Passion vs. Practicality: Major Choice Dilemma**]{.underline}
+
+According to research conducted by @ruder_vannoy, information regarding earnings plays an influential role for students when it comes to selecting both colleges and majors. @fig-2 provides a detailed perspective on how median earnings and employment rates correlate with major choices. Each colored point on the scatterplot represents a specific major, with its size reflecting the total number of graduates in that field.
+
+::: column-margin
+> "Showing students median earnings and earnings variation leads to large and significantly different expectations in earnings as well as different choices in college majors." - [@ruder_vannoy].
+:::
+
+Engineering stands out with the highest median earnings at nearly \$60,000 and a 94% employment rate. Additionally, business is not only the most popular major, with a significant number of graduates, but it also ranks second in terms of median earnings. Many students seem to prioritize favorable earning potential and a large job market when deciding their majors, with engineering and business programs likely attracting students who have this priority.
+
+However, despite being a popular major, Humanities & Liberal Arts falls on the lower end of both median earnings and employment rates. Similarly, Social Science (which ranks fifth in terms of number of graduates) has the lowest employment rate among all major categories as well as low median earnings. This suggests that a substantial number of students are willing to pursue their passion in these fields, even if it means sacrificing immediate financial boosts and job security for their interests instead. On the other hand, Education has one of the highest employment rates, indicating that graduates in this sector have a higher chance of finding employment. Yet, its median earnings are on the lower end at approximately \$32,000; this is consistent with the theory posed by @casselman_2014 that most teachers, presumably, knew they wouldn't make much money when choosing their career but do so anyways for the job security it offers.
+
+```{r fig-2, fig.cap="Median Earnings vs Employment Rate by Major Category (2010-2012)", fig.align='center'}
+
+collegemajors_scatter <- collegemajors %>%
+  mutate(Employment_Rate = round(Employed / (Unemployed + Employed) * 100, 1)) %>%
+  select(Total, Major_category, Median, Employment_Rate, Unemployment_rate) %>%
+  filter(!is.na(Total) & !is.na(Major_category) 
+         & !is.na(Median) & !is.na(Employment_Rate) & !is.na(Unemployment_rate))
+
+palette_set1 <- brewer.pal(9, "Set1")
+palette_set2 <- brewer.pal(7, "Set3")
+custom_palette <- c(palette_set1, palette_set2)
+  
+  
+collegemajors_scatter <- collegemajors_scatter %>%
+  group_by(Major_category) %>%
+  summarise(Employment_Rate = mean(Employment_Rate), 
+            Total = sum(Total),
+            Median = mean(Median),
+            Unemployment_rate = mean(Unemployment_rate)*100)
+
+plot2 <- ggplot(collegemajors_scatter, 
+       aes(x = Median, y = Employment_Rate, size = Total, color = Major_category,
+           text = paste("Major Category:", Major_category, "<br>",
+                        "Median Earnings ($):", scales::comma(Median, scale = 1), "<br>",
+                        "Employment Rate:", scales::percent(Employment_Rate / 100, accuracy = 0.1), "<br>",
+                        "Total Graduates:", scales::comma(Total, scale = 1)))) +
+  geom_point(alpha = 0.7) +
+  labs(x = "Median Earnings (USD)", y = "Employment Rate (%)",
+       color = "Major Category",
+       size = "") +
+  theme_minimal() + 
+  scale_color_manual(values = custom_palette)
+
+
+
+ggplotly(plot2, tooltip = "text")
+  
+
+```
+
+Overall, the data highlights a balance between passion and practicality when it comes to major selection. Some students prioritize their interests and passions (e.g., Humanities & Liberal Arts), while others favour financial stability and earning potential instead (e.g., Engineering and Business).
+
+#### [**The Demographics behind College Majors**]{.underline}
+
+#### **Gender**
+
+An open question is why women exhibit a greater tendency than men to choose/transition into majors that lead to lower-paid occupations. A study carried out by @kugler2021 proves women are more inclined than men to switch out of fields that are both male-dominated and STEM (Science, Technology, Engineering, and Mathematics) in response to poor academic performance compared to men. Hence, this leads us to wonder: how exactly is the gender distribution in college majors?
+
+```{r fig-3, fig.cap="Gender Distribution by College Major (2010-2012)", fig.align='center'}
+
+collegemajors_gender <- collegemajors %>%
+  select(Major_category, Men, Women, Total, ShareWomen) %>%
+  filter(!is.na(Major_category) & !is.na(Men) 
+         & !is.na(Women) & !is.na(ShareWomen) & !is.na(Total))
+  
+  
+collegemajors_gender <- collegemajors_gender %>%
+  group_by(Major_category) %>%
+  summarise(Men = sum(Men), 
+            Women = sum(Women),
+            Total = sum(Total),
+            ShareWomen = ((Women) / (Total) * 100),
+            ShareMen = ((Men) / (Total) * 100))
+
+
+plot3 <- collegemajors_gender %>%
+  gather(key = "Gender", value = "Graduates", Men, Women) %>%
+  ggplot(aes(x = Graduates/1000, y = reorder(Major_category, Graduates), 
+             fill = Gender,
+             text = paste("Major:", Major_category, "<br>",
+                          "Total Graduates:", scales::comma(Graduates, scale = 1),
+                          "<br>",
+                          "Gender:", Gender, "<br>",
+                          "Share:", paste(round(ifelse(Gender == "Men", 
+                                                     ShareMen, ShareWomen), 1), "%")))) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Number of Graduates ('000)", y = "Major", fill = "Gender") +
+  scale_fill_manual(values = c("blue", "#FC6C85")) +
+  scale_x_continuous(labels = scales::comma) +  
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 8.5),
+        axis.text.y = element_text(size = 8.5)) 
+ 
+
+ggplotly(plot3, tooltip = c("text"))
+
+
+```
+
+Looking at @fig-3, it is evident that majors in Humanities & Liberal Arts, Education, Psychology & Social Work, Health, Biology & Life Science, Communications & Journalism, and Arts predominantly attract female graduates, showcasing a significant gender disparity in favor of women. In contrast, Engineering and Computers & Mathematics exhibit a substantial imbalance with a larger number of male graduates compared to their female counterparts, with the proportion of male graduates being 76% and 70% respectively. Business and Social Science majors, on the other hand, seem to have relatively balanced proportions of male and female graduates.
+
+These findings highlight the gender disparity in STEM education. With the exception of Health and Biology & Life Science, we can infer that STEM majors appear to primarily attract male students. This is consistent with the previous conclusions by @kugler2021 and broader trends in STEM fields, where women have historically been underrepresented. Addressing this gender disparity in STEM education and careers remains an important goal for promoting diversity and inclusivity in these fields.
+
+#### **Ethnicity**
+
+Turning our focus to ethnicity, we also wonder if there are variations within STEM education that relate to different ethnic backgrounds. [Table 2](#table-2) presents a decade-long perspective on the percentage distribution of STEM graduates by race/ethnicity from 2011 to 2021.
+
+The percentage of white STEM graduates, while consistently the highest among the demographic groups, has been gradually decreasing over the years. In 2011-2012, it stood at 59.9% but dropped to 48.7% by 2020-2021. Conversely, Hispanic and Asian representation has notably risen, signifying a positive trend toward increased diversity within STEM fields. The Non-resident category also exhibited a relatively steady upward trend over the years, except for the period between 2018 and 2021. This suggests a growing presence of international students participating in STEM programs within the United States.
+
+In summary, the data underscores significant changes in the makeup of STEM graduates, showing greater diversity and representation among groups that have historically been less well-represented. While there is room for further improvement in achieving balance, these trends indicate a promising outlook for a more inclusive and diverse future within STEM fields in the United States.
+
+<a name="table-2"></a>
+
+```{r}
+
+ethnicity$Year <- as.integer(substr(ethnicity$Year, 1, 4))
+
+ethnicity <- ethnicity %>%
+  mutate(across(starts_with("Total") : ends_with("Nonresident"), ~as.numeric(gsub(",", "", .))))
+
+```
+
+```{r table2}
+
+# Calculating Ethnicity Proportions 
+
+ethnicity <- ethnicity %>%
+  mutate_at(vars(White:Nonresident), list(Proportion = ~ . / Total))
+
+# Contingency Table
+
+ethnicity_table <- ethnicity %>%
+  select(Year, contains("_Proportion")) %>%
+  gt() %>%
+  tab_header(title = "🎓 Table 2: STEM Graduates in the United States 🎓",
+             subtitle = "Percentage Distribution by Race/Ethnicity (2011-2021)") %>%
+  tab_style(style = cell_text(weight = "bold"),
+            locations = cells_column_labels()) %>%
+  tab_style(style = cell_text(weight = "bold"),
+           locations = cells_title("title")) %>%
+  tab_style(
+    style = cell_borders(sides = "right", color = "black", weight = px(2)),
+    locations = cells_body(
+      columns = c(Year))
+  ) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 2, columns = c(4, 5, 8, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 3, columns = c(4, 8, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 4, columns = c(4, 5, 8, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 5, columns = c(4, 5, 8, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 6, columns = c(4, 5, 8, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 7, columns = c(4, 5, 8))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 8, columns = c(3, 4, 5, 8))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 9, columns = c(3, 4, 5, 8, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#90EE90"),
+  locations = cells_body(rows = 10, columns = c(3, 4, 5, 8))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 2, columns = c(2, 3))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 3, columns = c(2, 3, 5))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 4, columns = c(2, 3, 7))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 5, columns = c(2, 3))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 6, columns = c(2, 3))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 7, columns = c(2, 3, 7, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 8, columns = c(2, 9))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 9, columns = c(2))) %>%
+  tab_style(
+  style = cell_fill(color = "#FF8886"),
+  locations = cells_body(rows = 10, columns = c(2, 9))) %>%
+  cols_label(
+    Year = "Year",
+    `White_Proportion` = "White",
+    `Black_Proportion` = "Black",
+    `Hispanic_Proportion` = "Hispanic",
+    `Asian_Proportion` = "Asian",
+    `Pacific.Islander_Proportion` = "Pacific Islander",
+    `American.Indian.Alaska.Native_Proportion` = "American Indian/Alaska Native",
+    `Two.or.more.races_Proportion` = "Two or more races",
+    `Nonresident_Proportion` = "Non-resident"
+  ) %>%
+  fmt_percent(
+    columns = !Year, 
+    decimals = 1 
+  ) %>%
+  cols_align(align = "left", columns = Year) %>%
+  cols_align(align = "right", columns = -Year) %>%
+  tab_footnote("* STEM fields include biological and biomedical sciences, computer and information sciences, engineering and engineering technologies, mathematics and statistics, and physical sciences and science technologies.") %>%
+  tab_footnote("** GREEN cells → increase in proportion | RED cells → drop in proportion.") %>%
+  tab_source_note(md("**Source**: [U.S. Department of Education, *National Center for Education Statistics*, Fall 2011 through Fall 2020](https://nces.ed.gov/programs/digest/d22/tables/dt22_318.45.asp)"))
+
+
+# Returning Year to original "YYYY-YYYY" format
+
+ethnicity_table %>%
+  fmt(
+    Year,
+    fns = function(x) {
+      year_start <- as.integer(x)
+      year_end <- year_start + 1
+      return(paste0(year_start, "-", year_end))
+    }
+  )
+
+
+```
+
+## Conclusion: Embracing Diversity and Balancing Passion with Practicality
+
+Overall, our exploration of college major trends reveals a dynamic interplay between personal passions and practical considerations. The data also underscores the importance of promoting diversity, particularly in STEM fields, while acknowledging the evolving priorities of students.
+
+Moving forward, recognizing the multifaceted influences on major choices can guide educators, policymakers, and students themselves. By embracing diversity and striking a balance between passion and practicality, we can shape a more inclusive and promising future in higher education and beyond.

@@ -1,0 +1,69 @@
+/* css styles */
+.navbar-dark, .quarto-title-banner {
+  background-color: #C5D0E6;
+}
+
+h1 {
+  font-family: "Cooper Black";
+  color: #001f3f;
+  font-size: 38px;
+}
+
+h3 {
+  font-family: "Lucinda Sans", sans-serif;
+}
+
+.navbar-title {
+  font-size: 22px;
+  font-family: "Tahoma";
+}
+
+.menu-text {
+  font-size: 20px;
+  font-family: "Tahoma";
+}
+
+.quarto-title-meta-heading {
+  font-family: "Segoe UI Historic Regular";
+}
+
+.quarto-title-meta-contents {
+  font-family: "Segoe UI Historic Regular";
+}
+
+h2.anchored {
+  font-family: "Georgia", sans-serif;
+  margin-top: 30px;
+  margin-bottom: 22px;
+}
+
+h4.anchored {
+  font-family: "Georgia", sans-serif;
+  margin-top: 25px;
+  margin-bottom: 30px;
+}
+
+p{
+  font-family: "Candara";
+  font-size: 18px;
+  margin-bottom: 29px;
+}
+
+.listing-description {
+  font-family: "Candara";
+}
+
+.figure-caption {
+  text-align: center;
+  padding: 5px;
+  position: absolute;
+  bottom: 100%;
+  width: 100%;
+  margin-bottom: -20px;
+}
+
+.csl-entry {
+  font-family: "Candara";
+  font-size: 16px;
+}
+

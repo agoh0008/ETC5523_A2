@@ -1,0 +1,19 @@
+---
+title: "Welcome To My Blog 👋"
+author: "Alexandra Goh"
+date: "2022-07-18"
+categories: [welcome]
+---
+
+Welcome, aspiring scholars and inquisitive minds!
+
+This blog is your portal to the world of college majors and their economic landscapes. Whether you're a current student navigating your academic journey or a future scholar considering your path, join us in unraveling the data-driven secrets of college majors. 
+
+Let's embark together on this enlightening expedition into the realm of higher education and its economic dimensions!
+
+
+<div style="display: flex; justify-content: center; margin-top: 40px;">
+  <img src="welcome.gif" alt="Welcome" />
+</div>
+
+

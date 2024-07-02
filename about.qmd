@@ -1,0 +1,19 @@
+---
+title: "About Me"
+image: profile.jpg
+about:
+  template: trestles
+  links:
+    - icon: github
+      text: Github
+      href: https://github.com/etc5523-2022
+
+---
+
+Hello! I'm Alexandra Goh, a Master's student in Business Analytics at Monash University. 
+
+I'm passionate about using data to drive insights, and this blog is a space where I explore data communication for my course. 
+
+___________________________________________________________________________________________
+
+This is a blog for the ETC5523 Communicating with Data assessment at Monash University. The main purpose of this blog and the dataset(s) used are merely for educational purposes only.

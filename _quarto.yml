@@ -1,0 +1,20 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Home"
+  navbar:
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/ETC5523-2023/blog-agoh0008
+      - icon: linkedin
+        href: https://www.linkedin.com/in/alexandra-goh-4b3023181
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+
+
+

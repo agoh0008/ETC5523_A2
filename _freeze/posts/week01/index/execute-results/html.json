@@ -1,0 +1,14 @@
+{
+  "hash": "a09d84daef9d85bbcc348407f333d647",
+  "result": {
+    "markdown": "---\ntitle: \"Making Sense of Majors: What Drives Our College Major Choices? 📚\"\nauthor: \"Alexandra Goh\"\ndate: \"2023-08-25\"\ncategories: [data story]\nimage: \"graduate.gif\"\nbibliography: references.bib\ncsl: apa-6th-edition.csl\ncss: \"style.css\"\nexecute: \n  echo: false\n  warning: false\n  message: false\n---\n\n::: {.cell}\n\n:::\n\n\nEver wondered why so many of us end up choosing the college majors we do? Is it the promise of high earnings or the allure of job security? According to recent studies, your major might have more to do with economic factors than you think! In fact, the National Center for Education Statistics reported that roughly one-third of undergraduate students who formally declared a major within three years of initial enrollment ended up changing it at least once, with another solid 10 percent switching their major two times or more [@claybourn_2022].\n\nIn this article, we will delve further and explore the motivations behind one of life's most significant decisions: choosing a college major.\n\n\n## About the Data\n\nThe data for this article is mainly sourced from TidyTuesday\n\n* Basic communication theory and its relevancy with communicating with data\n* Demonstrate communication competency by selecting appropriate behaviour based on audience and self monitoring\n* Identify and apply rhetorical elements to improve data storytelling \n* Clearly articulate and express technical problems for others to help you\n\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
